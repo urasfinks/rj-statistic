@@ -14,7 +14,7 @@ public class StatisticCpu {
 
     public volatile double cpuUsage;
 
-    public StatisticCpu() {
+    public StatisticCpu(StatisticAggregator statisticAggregator) {
         new Thread(() -> {
             while (true) {
                 OperatingSystemMXBean operatingSystemMXBean =
@@ -30,6 +30,7 @@ public class StatisticCpu {
                 long elapsedCpu = processCpuTime - prevProcessCpuTime;
                 long elapsedTime = upTime - prevUpTime;
                 cpuUsage = Math.min(99F, elapsedCpu / (elapsedTime * 10000F * availableProcessors));
+                statisticAggregator.get().setObject("StatisticCpu", cpuUsage);
             }
         }).start();
     }
