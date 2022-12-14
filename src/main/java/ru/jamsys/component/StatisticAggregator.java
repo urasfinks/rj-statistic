@@ -1,17 +1,19 @@
 package ru.jamsys.component;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.jamsys.StatisticAggregationData;
 import ru.jamsys.Util;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Component
 public class StatisticAggregator {
 
-    Map<Long, StatisticAggregationData> timeLine = new ConcurrentHashMap();
+    ConcurrentLinkedDeque<StatisticAggregationData> queue = new ConcurrentLinkedDeque<>();
+    volatile Long lastTimestamp = null;
 
     public StatisticAggregator(SchedulerGlobal schedulerGlobal) {
         final StatisticAggregator self = this;
@@ -19,24 +21,46 @@ public class StatisticAggregator {
     }
 
     public StatisticAggregationData get() {
-        return get(Util.getTimestamp());
+        long timestamp = Util.getTimestamp();
+        return get(timestamp);
     }
 
-    public StatisticAggregationData get(Long timestamp) {
-        if (!timeLine.containsKey(timestamp)) {
-            timeLine.computeIfAbsent(timestamp, (key) -> new StatisticAggregationData(key));
+    public StatisticAggregationData get(long timestamp) {
+        lastTimestamp = timestamp;
+        StatisticAggregationData statisticAggregationData = new StatisticAggregationData(timestamp);
+        queue.add(statisticAggregationData);
+        return statisticAggregationData;
+    }
+
+    public List<StatisticAggregationData> flush() {
+        /*
+         * Что бы небыло прерывайний, надо сгружать до последнего изменения, потому что последнее возможно ещё не завершилось
+         * */
+        long copyLastTimestamp = new Long(lastTimestamp).longValue();
+        List<StatisticAggregationData> ret = new ArrayList<>();
+        if (copyLastTimestamp == 0) {
+            return ret;
         }
-        return timeLine.get(timestamp);
+        while (true) {
+            StatisticAggregationData statisticAggregationData = queue.peekFirst();
+            if (statisticAggregationData == null) {
+                break;
+            }
+            long timestamp = statisticAggregationData.getTimestamp();
+            if (timestamp < copyLastTimestamp) {
+                ret.add(statisticAggregationData);
+                queue.remove(statisticAggregationData);
+            } else {
+                break;
+            }
+        }
+        return ret;
     }
 
     private void removeOldTime() {
-        Long[] longs = timeLine.keySet().toArray(new Long[0]);
-        long old = Util.getTimestamp() - 60;
-        Arrays.stream(longs).forEach((l) -> {
-            if (l < old) {
-                timeLine.remove(l);
-            }
-        });
+        if (queue.size() > 1000) {
+            queue.removeFirst();
+        }
     }
 
 }

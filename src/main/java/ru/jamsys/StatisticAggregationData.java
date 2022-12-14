@@ -1,5 +1,7 @@
 package ru.jamsys;
 
+import lombok.Getter;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,8 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class StatisticAggregationData {
 
+    @Getter
     private final long timestamp;
+    @Getter
     private final Map<String, AtomicInteger> counter = new ConcurrentHashMap<>();
+    @Getter
     private final Map<String, Object> object = new ConcurrentHashMap<>();
 
     public StatisticAggregationData(long timestamp) {
