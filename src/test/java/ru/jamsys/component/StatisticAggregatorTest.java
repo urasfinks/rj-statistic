@@ -17,7 +17,6 @@ class StatisticAggregatorTest {
     static void beforeAll() {
         String[] args = new String[]{};
         context = SpringApplication.run(App.class, args);
-        App.initContext(context, true);
     }
 
     @Test
