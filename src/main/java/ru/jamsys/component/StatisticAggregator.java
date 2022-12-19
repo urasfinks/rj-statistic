@@ -1,6 +1,5 @@
 package ru.jamsys.component;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.jamsys.StatisticAggregationData;
 import ru.jamsys.Util;
@@ -13,11 +12,11 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class StatisticAggregator {
 
     ConcurrentLinkedDeque<StatisticAggregationData> queue = new ConcurrentLinkedDeque<>();
-    volatile Long lastTimestamp = null;
+    volatile Long lastTimestamp = 0L;
 
     public StatisticAggregator(SchedulerGlobal schedulerGlobal) {
         final StatisticAggregator self = this;
-        schedulerGlobal.add(() -> self.removeOldTime());
+        schedulerGlobal.add(self::removeOldTime);
     }
 
     public StatisticAggregationData get() {
@@ -36,7 +35,7 @@ public class StatisticAggregator {
         /*
          * Что бы небыло прерывайний, надо сгружать до последнего изменения, потому что последнее возможно ещё не завершилось
          * */
-        long copyLastTimestamp = new Long(lastTimestamp).longValue();
+        long copyLastTimestamp = lastTimestamp;
         List<StatisticAggregationData> ret = new ArrayList<>();
         if (copyLastTimestamp == 0) {
             return ret;
