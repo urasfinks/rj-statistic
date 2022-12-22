@@ -1,65 +1,39 @@
 package ru.jamsys.component;
 
 import org.springframework.stereotype.Component;
-import ru.jamsys.StatisticAggregationData;
-import ru.jamsys.Util;
+import ru.jamsys.AbstractCoreComponent;
+import ru.jamsys.StatisticAggregatorData;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Component
-public class StatisticAggregator {
+public class StatisticAggregator extends AbstractCoreComponent {
 
-    ConcurrentLinkedDeque<StatisticAggregationData> queue = new ConcurrentLinkedDeque<>();
-    volatile Long lastTimestamp = 0L;
+    private final Broker broker;
+    private final ConcurrentLinkedQueue<Object> queue = new ConcurrentLinkedQueue<>();
 
-    public StatisticAggregator(SchedulerGlobalStatistic schedulerGlobalStatistic) {
-        final StatisticAggregator self = this;
-        schedulerGlobalStatistic.add(self::removeOldTime);
+    public StatisticAggregator(Broker broker) {
+        this.broker = broker;
     }
 
-    public StatisticAggregationData get() {
-        long timestamp = Util.getTimestamp();
-        return get(timestamp);
-    }
-
-    public StatisticAggregationData get(long timestamp) {
-        lastTimestamp = timestamp;
-        StatisticAggregationData statisticAggregationData = new StatisticAggregationData(timestamp);
-        queue.add(statisticAggregationData);
-        return statisticAggregationData;
-    }
-
-    public List<StatisticAggregationData> flush() {
-        /*
-         * Что бы небыло прерывайний, надо сгружать до последнего изменения, потому что последнее возможно ещё не завершилось
-         * */
-        long copyLastTimestamp = lastTimestamp;
-        List<StatisticAggregationData> ret = new ArrayList<>();
-        if (copyLastTimestamp == 0) {
-            return ret;
+    public void add(Object o) {
+        if (o != null) {
+            queue.add(o);
         }
+    }
+
+    @Override
+    public void flushStatistic() {
+        StatisticAggregatorData statisticAggregatorData = new StatisticAggregatorData();
         while (true) {
-            StatisticAggregationData statisticAggregationData = queue.peekFirst();
-            if (statisticAggregationData == null) {
-                break;
-            }
-            long timestamp = statisticAggregationData.getTimestamp();
-            if (timestamp < copyLastTimestamp) {
-                ret.add(statisticAggregationData);
-                queue.remove(statisticAggregationData);
+            Object peek = queue.peek();
+            if (peek != null) {
+                statisticAggregatorData.getList().add(peek);
             } else {
                 break;
             }
         }
-        return ret;
-    }
-
-    private void removeOldTime() {
-        if (queue.size() > 1000) {
-            queue.removeFirst();
-        }
+        broker.addElement(StatisticAggregatorData.class, statisticAggregatorData);
     }
 
 }
