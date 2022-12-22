@@ -14,9 +14,9 @@ public class StatisticAggregator {
     ConcurrentLinkedDeque<StatisticAggregationData> queue = new ConcurrentLinkedDeque<>();
     volatile Long lastTimestamp = 0L;
 
-    public StatisticAggregator(SchedulerGlobal schedulerGlobal) {
+    public StatisticAggregator(SchedulerGlobalStatistic schedulerGlobalStatistic) {
         final StatisticAggregator self = this;
-        schedulerGlobal.add(self::removeOldTime);
+        schedulerGlobalStatistic.add(self::removeOldTime);
     }
 
     public StatisticAggregationData get() {
