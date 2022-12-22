@@ -47,4 +47,9 @@ public class StatisticAggregator extends AbstractCoreComponent {
         broker.addElement(StatisticAggregatorData.class, statisticAggregatorData);
     }
 
+    @Override
+    public void shutdown() {
+        super.shutdown();
+        scheduler.remove(SchedulerGlobal.SCHEDULER_GLOBAL_STATISTIC_WRITE, this::flushStatistic);
+    }
 }
