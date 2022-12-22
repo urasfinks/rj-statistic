@@ -16,7 +16,7 @@ public class StatisticCpu {
 
     public StatisticCpu(StatisticAggregator statisticAggregator) {
         new Thread(() -> {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 OperatingSystemMXBean operatingSystemMXBean =
                         (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
                 RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
