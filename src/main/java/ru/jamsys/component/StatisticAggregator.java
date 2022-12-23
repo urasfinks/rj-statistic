@@ -44,7 +44,7 @@ public class StatisticAggregator extends AbstractCoreComponent {
         if (broker == null) {
             broker = applicationContext.getBean(Broker.class);
         }
-        broker.addElement(StatisticAggregatorData.class, statisticAggregatorData);
+        broker.add(StatisticAggregatorData.class, statisticAggregatorData);
     }
 
     @Override
